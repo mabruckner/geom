@@ -1,0 +1,10 @@
+[package]
+name = "geom"
+version = "0.1.0"
+authors = ["Mitchell Bruckner <mbruckner807@gmail.com>"]
+
+[dev-dependencies]
+conrod="0.32.0"
+find_folder = "0.3.0"
+piston_window = "0.37.0"
+piston = "0.17.0"
