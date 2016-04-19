@@ -97,11 +97,17 @@ impl Widget for Renderer
     fn update<B: Backend>(self, args: UpdateArgs<Self,B>)
     {
         let UpdateArgs{ idx, state, rect, style, mut ui, ..} = args;
+        let mouse = ui.global_input().mouse_position();
+        println!("{:?}",mouse);
         //println!("{:?}",rect);
         let mut shapes = vec![
             Shape::Segment(Point{x:0.0,y:0.0},Point{x:100.0,y:50.0}),
-            Shape::Arc{center:Point{x:0.0,y:0.0},radius:100.0,start:0.0,circ:1.0}];
+            Shape::Arc{center:Point{x:0.0,y:0.0},radius:50.0,start:0.0,circ:-1.0},
+            Shape::Arc{center:Point{x:0.0,y:0.0},radius:100.0,start:0.0,circ:1.0},
+            Shape::Arc{center:Point{x:0.0,y:0.0},radius:75.0,start:1.5,circ:-1.0},
+            Shape::Arc{center:Point{x:0.0,y:0.0},radius:150.0,start:-2.0,circ:1.0}];
         let points = approxpts(&shapes,10);
+        let contact = closepts(&shapes,Point{x:mouse[0],y:mouse[1]});
         let mut current = 0;
         let mut indices = state.view().indices.clone();
         let prevlen = indices.len();
@@ -134,6 +140,21 @@ impl Widget for Renderer
             }
             Circle::fill(2.0)
                 .color(color::WHITE)
+                .middle_of(idx)
+                .x_y(pt.x,pt.y)
+                .set(index, &mut ui);
+            current = current + 1;
+        }
+        for pt in contact {
+            let index;
+            if current < indices.len() {
+                index = indices[current];
+            } else {
+                index = ui.new_unique_node_index();
+                indices.push(index);
+            }
+            Circle::fill(4.0)
+                .color(color::RED)
                 .middle_of(idx)
                 .x_y(pt.x,pt.y)
                 .set(index, &mut ui);

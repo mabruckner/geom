@@ -23,7 +23,28 @@ impl Point
     }
 }
 
-impl Mul for Point
+impl Mul<Point> for f64
+{
+    type Output = Point;
+    fn mul(self, rhs: Point) -> Point
+    {
+        rhs*self
+    }
+}
+
+impl Mul<f64> for Point
+{
+    type Output = Point;
+    fn mul(self, rhs: f64) -> Point
+    {
+        Point {
+            x: self.x*rhs,
+            y: self.y*rhs
+        }
+    }
+}
+
+impl Mul<Point> for Point
 {
     type Output = f64;
     fn mul(self, rhs: Point) -> f64
@@ -67,7 +88,11 @@ fn norm_angle(ang:f64) -> (f64,f64)
 {
     let tau = f64::consts::PI * 2.0;
     let rots = ang/tau;
-    (rots.fract()*tau,rots.trunc())
+    match rots.fract() {
+        x if x < 0.0 => (tau + x*tau, rots.trunc()-1.0),
+        x => (x*tau, rots.trunc())
+    }
+//    (rots.fract()*tau,rots.trunc())
 }
 
 fn angle_delta(start:f64, end: f64) -> f64
@@ -103,7 +128,8 @@ impl Shape {
             },
             &Shape::Segment(a,b) => {
                 let rel = point - a;
-                let x = (b-a) * rel;
+                let delta = b-a;
+                let x = (delta * rel) / (delta * delta);
                 let t = match x {
                     x if x > 1.0 => 1.0,
                     x if x < 0.0 => 0.0,
@@ -116,11 +142,22 @@ impl Shape {
                 let delta = point - center;
                 let theta = delta.y.atan2(delta.x);
                 let mut out = Vec::new();
-                if (angle_delta(theta,start) > 0.0) == (circ > 0.0) {
+                if (angle_delta(start,theta) < 0.0) == (circ > 0.0) {
                     out.push((self.param(0.0).dist(point),0.0));
                 }
-                if (angle_delta(theta,start+circ) > 0.0) != (circ > 0.0) {
+                if (angle_delta(start+circ,theta) > 0.0) == (circ > 0.0) {
                     out.push((self.param(1.0).dist(point),1.0));
+                }
+                let (size,mut current) = match angle_delta(start,theta) {
+                    x if x < 0.0 && circ < 0.0 => (-circ,-x),
+                    x if x >= 0.0 && circ < 0.0 => (-circ,f64::consts::PI*2.0 - x),
+                    x if x < 0.0 && circ >= 0.0 => (circ,f64::consts::PI*2.0 + x),
+                    x => (circ,x)
+                };
+                while current < size {
+                    let param = current/size;
+                    out.push((self.param(param).dist(point),param));
+                    current = current + f64::consts::PI*2.0;
                 }
                 out
             }
